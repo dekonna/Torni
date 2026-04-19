@@ -6,7 +6,7 @@ class Bullet:
     def __init__(self, x, y, dx, dy):
         self.rect = pygame.Rect(x, y, 6, 6)
         self.speed = 10
-        self.alive = True  # ✅ LISÄTTY
+        self.alive = True
 
         length = math.hypot(dx, dy)
         if length != 0:

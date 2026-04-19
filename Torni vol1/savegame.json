@@ -1,0 +1,30 @@
+{
+    "player": {
+        "hp": 55,
+        "x": 425,
+        "y": 451,
+        "current_weapon_index": 0,
+        "inventory": [
+            "Bat"
+        ]
+    },
+    "floor": 0,
+    "pickups": [],
+    "enemies": [
+        {
+            "x": 474,
+            "y": 205,
+            "hp": 5
+        },
+        {
+            "x": 97,
+            "y": 324,
+            "hp": 50
+        },
+        {
+            "x": 604,
+            "y": 733,
+            "hp": 50
+        }
+    ]
+}

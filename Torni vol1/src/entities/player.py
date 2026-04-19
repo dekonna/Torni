@@ -1,7 +1,6 @@
 import pygame
 import math
 from src.entities.bullet import Bullet
-from src.systems.weapons import Weapon
 
 class Player:
 
@@ -33,9 +32,6 @@ class Player:
         # ASEET / INVENTAARIO
         self.inventory = []
         self.current_weapon_index = 0
-
-        self.inventory.append(Weapon("Pistol", "ranged", 10, 300, 200))
-        self.inventory.append(Weapon("Bat", "melee", 15, 50, 400))
 
         self.last_attack = 0
 
@@ -78,27 +74,48 @@ class Player:
         keys = pygame.key.get_pressed()
 
         # WASD LIIKE
+        dx = 0
+        dy = 0
+
         if keys[pygame.K_w]:
-            self.rect.y -= self.speed
+            dy -= self.speed
             self.direction = "up"
-            moving = True
 
         if keys[pygame.K_s]:
-            self.rect.y += self.speed
+            dy += self.speed
             self.direction = "down"
-            moving = True
 
         if keys[pygame.K_a]:
-            self.rect.x -= self.speed
+            dx -= self.speed
             self.direction = "left"
-            moving = True
 
         if keys[pygame.K_d]:
-            self.rect.x += self.speed
+            dx += self.speed
             self.direction = "right"
-            moving = True
+
+        # 🔹 X-suunnassa
+        self.rect.x += dx
+
+        for rect in self.game.collision_rects:
+            if self.rect.colliderect(rect):
+                if dx > 0:
+                    self.rect.right = rect.left
+                elif dx < 0:
+                    self.rect.left = rect.right
+
+        # 🔹 Y-suunnassa
+        self.rect.y += dy
+
+        for rect in self.game.collision_rects:
+            if self.rect.colliderect(rect):
+                if dy > 0:
+                    self.rect.bottom = rect.top
+                elif dy < 0:
+                    self.rect.top = rect.bottom
 
         # ANIMAATIO
+        moving = dx != 0 or dy != 0
+
         if moving:
             self.frame_index += self.animation_speed
             if self.frame_index >= len(self.animations[self.direction]):
@@ -117,8 +134,10 @@ class Player:
             self.shoot_cooldown -= 1
 
         # TÄHTÄYS (360)
-        dx = world_x - self.rect.centerx
-        dy = world_y - self.rect.centery
+        aim_dx = world_x - self.rect.centerx
+        aim_dy = world_y - self.rect.centery
+
+        self.angle = math.atan2(aim_dy, aim_dx)
 
         keys = pygame.key.get_pressed()
 
@@ -147,17 +166,54 @@ class Player:
             bullet.draw(screen, camera)
 
         # tähtäin (vain ranged aseelle)
-        weapon = self.inventory[self.current_weapon_index]
+        if self.inventory:
+            weapon = self.inventory[self.current_weapon_index]
 
-        if weapon.weapon_type == "ranged":
-            start = camera.apply(self.rect).center
+            if weapon.weapon_type == "ranged":
+                start = camera.apply(self.rect).center
 
-            end = (
-                start[0] + math.cos(self.angle) * 200,
-                start[1] + math.sin(self.angle) * 200
-            )
+                end = (
+                    start[0] + math.cos(self.angle) * 200,
+                    start[1] + math.sin(self.angle) * 200
+                )
 
-            pygame.draw.line(screen, (255, 0, 0), start, end, 2)
+                pygame.draw.line(screen, (255, 0, 0), start, end, 2)
+
+        # ASE KÄDESSÄ
+        if self.inventory:
+
+            weapon = self.inventory[self.current_weapon_index]
+
+            if weapon.image:
+                weapon_distance = weapon.weapon_distance
+
+                hand_offset_x = weapon.hand_offset_x
+                hand_offset_y = weapon.hand_offset_y
+
+                weapon_x = (
+                        self.rect.centerx
+                        + hand_offset_x
+                        + math.cos(self.angle) * weapon_distance
+                )
+
+                weapon_y = (
+                        self.rect.centery
+                        + hand_offset_y
+                        + math.sin(self.angle) * weapon_distance
+                )
+
+                rotated_weapon = pygame.transform.rotate(
+                    weapon.image,
+                    -math.degrees(self.angle) + weapon.rotation_offset
+                )
+
+                weapon_rect = rotated_weapon.get_rect(
+                    center=camera.apply(
+                        pygame.Rect(weapon_x, weapon_y, 0, 0)
+                    ).center
+                )
+
+                screen.blit(rotated_weapon, weapon_rect)
 
         # INVENTORY UI
         for i, weapon in enumerate(self.inventory):
@@ -176,6 +232,10 @@ class Player:
             screen.blit(text, (x + 10, y + 10))
 
     def attack(self):
+
+        if not self.inventory:
+            return
+
         weapon = self.inventory[self.current_weapon_index]
 
         print("ASE:", weapon.name, "TYPE:", weapon.weapon_type)
@@ -194,6 +254,7 @@ class Player:
         elif weapon.weapon_type == "melee":
             print("LYÖ")
             self.melee_attack()
+
 
     def melee_attack(self):
         weapon = self.inventory[self.current_weapon_index]

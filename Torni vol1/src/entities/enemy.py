@@ -2,10 +2,14 @@ import pygame
 
 class Enemy:
 
-    def __init__(self, x, y):
+    def __init__(self, game, x, y):
+        self.game = game
         self.rect = pygame.Rect(x, y, 20, 20)
         self.speed = 1
-        self.hp = 50
+
+        self.max_hp = 50
+        self.hp = self.max_hp
+
         self.alive = True
 
         # sprite sheet
@@ -28,18 +32,41 @@ class Enemy:
             self.frames.append(frame)
 
     def update(self, player):
-        # seuraa pelaajaa
-        if self.rect.x < player.rect.x:
-            self.rect.x += self.speed
-        if self.rect.x > player.rect.x:
-            self.rect.x -= self.speed
 
-        if self.rect.y < player.rect.y:
-            self.rect.y += self.speed
-        if self.rect.y > player.rect.y:
-            self.rect.y -= self.speed
+        # suunta pelaajaan
+        dx = player.rect.centerx - self.rect.centerx
+        dy = player.rect.centery - self.rect.centery
 
-        # animaatio pyörii
+        distance = (dx ** 2 + dy ** 2) ** 0.5
+
+        if distance != 0:
+            dx /= distance
+            dy /= distance
+
+        move_x = dx * self.speed
+        move_y = dy * self.speed
+
+        # 🔹 X-suunnassa
+        self.rect.x += move_x
+
+        for rect in self.game.collision_rects:
+            if self.rect.colliderect(rect):
+                if move_x > 0:
+                    self.rect.right = rect.left
+                elif move_x < 0:
+                    self.rect.left = rect.right
+
+        # 🔹 Y-suunnassa
+        self.rect.y += move_y
+
+        for rect in self.game.collision_rects:
+            if self.rect.colliderect(rect):
+                if move_y > 0:
+                    self.rect.bottom = rect.top
+                elif move_y < 0:
+                    self.rect.top = rect.bottom
+
+        # animaatio
         self.frame_index += self.animation_speed
         if self.frame_index >= len(self.frames):
             self.frame_index = 0
@@ -56,7 +83,7 @@ class Enemy:
         pygame.draw.rect(surface, (255, 0, 0), (rect.x, rect.y - 10, 30, 5))
 
         # HP bar vihreä
-        hp_width = 30 * (self.hp / 100)
+        hp_width = 30 * (self.hp / self.max_hp)
         pygame.draw.rect(surface, (0, 255, 0), (rect.x, rect.y - 10, hp_width, 5))
 
 
