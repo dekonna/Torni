@@ -8,6 +8,7 @@ class CharacterCreation:
         self.screen = screen
         self.font = pygame.font.SysFont(None, 60)
 
+
     def draw(self):
 
         self.screen.fill((30, 30, 30))

@@ -11,5 +11,6 @@ class Button:
         self.image = self.font.render(text, True, (255,0,0))
         self.rect = self.image.get_rect(center=center)
 
+
     def draw(self, screen):
         screen.blit(self.image, self.rect)
